@@ -1,0 +1,73 @@
+---
+title: "Transmission Type and Fuel economy"
+author: "Wang Yihong"
+date: "Saturday, June 21, 2014"
+output: pdf_document
+---
+
+*Forgive me to use the packages, All I want are prettier tables.*
+
+##Executive Summary
+
+This report provides an analysis of relation between the transmission types(automatic vs manual) and MPG(miles per gallon).Methods include t test for two groups, linear regression and data visualization.Results show that, in this sample, compared to manual transmission cars, automatic cars consume less fuel on average.
+
+##Descritive Statistics
+
+```{r,message=FALSE,results='asis'}
+library(stargazer);
+stargazer(mtcars,title = "Summary Statistics")
+```
+T test of `mpg` for automatic and manual cars:
+```{r}
+dif = t.test(mtcars$mpg[mtcars$am==0],mtcars$mpg[mtcars$am==1])
+```
+In average, automatic cars have lower `mpg` than  manual transmission cars. `r dif$estimate[1]` vs `r dif$estimate[2]`.The t statistic `r dif$statistic` indicates that the difference between the two group is significant at `r dif$p.value` level.
+
+##Model Selection
+
+I study the correlation table to determine the variables that are correlated to the dependent variable `mpg`. (I know I'm not supposed to use the packages, but I just want a prettier table. Actually, I can use `cor` and `cor.test` to check the correlation.)
+```{r,warning=FALSE, message=FALSE, results='asis', prompt=FALSE, dpi=600}
+#source("https://gist.github.com/nofacetou/42ed588f76b32a8e96ec/raw/CorTab.R")
+source("CorTab.R")
+require(xtable)
+ct = xtable(corstarsl(mtcars),digits=3,caption = "Correlation Table")
+#print(ct, type="html")
+print(ct)
+```
+Then I use the backward selection to determine the final model(results are untabulated):
+```{r,results='hide'}
+summary(step(lm(data=mtcars,
+                mpg~cyl+wt+hp+disp+drat+qsec+factor(vs)+factor(am)+gear+carb),
+             direction="backward",test="F"))
+```
+The best model(has lowest AIC) I've got from the above results is:
+```{r,message=FALSE,results='asis'}
+fit <- lm(mpg ~ wt + qsec + factor(am), data = mtcars)
+stargazer(fit,title="Regression Results", omit.stat=c("LL","ser","f"), no.space=TRUE)
+```
+Then the average difference in `mpg` between the automatic transmission cars and manual transmission cars is `r fit$coefficients[4]`,at the same level of weight and 1/4 mile time.
+
+```{r}
+sumCoef <- summary(fit)$coefficients
+sumCoef[4,1] + c(-1, 1) * qt(.975, df = fit$df) * sumCoef[4, 2]
+```
+With 95% confidence, I estimate that a manual transmission car consumes more fuel, from 0.04573 to 5.82594 mpg, compared to an automatic transmission car, given the same weight and 1/4 mile time.
+
+--------
+##Appendix
+
+```{r}
+boxplot(mpg~am,data=mtcars, names=c("automatic","manual"),
+        ylab = "Miles/(US) gallon",main="MPG for different transmission")
+```
+
+###Model Diagnostic 
+
+```{r}
+qqnorm(residuals(fit))
+qqline(residuals(fit))
+```
+The residuals for the model is approximately normally distributed.
+
+
+
