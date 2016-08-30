@@ -31,6 +31,8 @@ I study the correlation table to determine the variables that are correlated to 
 source("CorTab.R")
 require(xtable)
 ct = xtable(corstarsl(mtcars),digits=3,caption = "Correlation Table")
+#library(xlsx)
+#write.xlsx(ct, "E:/ct.xlsx") 
 #print(ct, type="html")
 print(ct)
 ```
